@@ -1,0 +1,32 @@
+# Centralized, owner-controlled list of radio stations.
+# Users can only SELECT from this list — there is no user-facing command to add a station.
+# id must be unique and stable (used in the select menu's value field).
+#
+# URLs below were checked against official source pages at the time of writing.
+# Public stream URLs can still change — if a station stops playing, verify with:
+#   ffplay <url>          (quick manual test)
+#   curl -I <url>         (should return HTTP 200 and an audio content-type)
+stations:
+  - id: lofi-hiphop
+    name: "Lofi hip hop radio"
+    description: "Lofi beats to relax/study to"
+    url: "https://play.streamafrica.net/lofiradio"
+    icon: ""
+
+  - id: lofi-gaming
+    name: "Lofi gaming radio"
+    description: "Lofi/synthwave beats to chill/game to"
+    url: "https://stream.nightride.fm/nightride.mp3"
+    icon: ""
+
+  - id: lofi-ambient
+    name: "Lofi ambient radio"
+    description: "Deep ambient electronic and space music"
+    url: "https://ice5.somafm.com/deepspaceone-128-mp3"
+    icon: ""
+
+  - id: lofi-sleep
+    name: "Lofi sleep/relax radio"
+    description: "Atmospheric textures with minimal beats"
+    url: "https://ice5.somafm.com/dronezone-128-mp3"
+    icon: ""

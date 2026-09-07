@@ -1,0 +1,26 @@
+{
+  "name": "discord-radio-bot",
+  "version": "2.0.0",
+  "description": "Specialized Discord internet-radio bot with independent per-guild audio sessions and owner-defined stations",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "deploy-commands": "node src/deploy-commands.js"
+  },
+  "dependencies": {
+    "@discordjs/opus": "^0.9.0",
+    "@discordjs/voice": "^0.19.2",
+    "better-sqlite3": "^11.3.0",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5",
+    "ffmpeg-static": "^5.2.0",
+    "js-yaml": "^4.1.0",
+    "libsodium-wrappers": "^0.7.15",
+    "winston": "^3.14.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
