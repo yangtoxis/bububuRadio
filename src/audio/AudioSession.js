@@ -146,7 +146,7 @@ export class AudioSession extends EventEmitter {
       return;
     }
 
-    this.log.warn('Radio stream dropped, reconnecting', {
+    this.log.warn('Radio stream unavailable, retrying', {
       station: source.stationId,
       attempt: this._radioRestartAttempts,
     });
@@ -200,19 +200,16 @@ export class AudioSession extends EventEmitter {
         this.emit('trackChange', title);
       });
     } catch (err) {
+      // Connection-level hiccups (voice negotiation timeout, a transient UDP
+      // IP-discovery failure on reconnect, etc.) land here just as often as
+      // a clean "stream never started" failure — Node's events.once (used by
+      // entersState) rejects with whatever the connection's own 'error'
+      // event carried if one fires before Ready, not just on timeout. Retry
+      // through the same backoff path as a mid-playback drop instead of
+      // giving up immediately; the user only hears about it if every retry
+      // fails (see the give-up branch in _restartRadio).
       this.log.error('Failed to start radio stream', { error: err.message, station: source.stationId });
-      this.emit(
-        'error',
-        // entersState's timeout rejects with a generic DOMException named
-        // "AbortError" (message "The operation was aborted") — it never
-        // mentions the target state, so that couldn't be matched on
-        // err.message. This is the case where voice negotiation (usually
-        // UDP IP discovery) never reaches Ready within VOICE_READY_TIMEOUT_MS.
-        err.name === 'AbortError'
-          ? new Error('Не удалось установить голосовое соединение с Discord (таймаут). Попробуйте ещё раз.')
-          : err
-      );
-      this.station = null;
+      this._restartRadio(source);
     }
   }
 
