@@ -1,6 +1,11 @@
 import { spawn } from 'node:child_process';
-import ffmpegPath from 'ffmpeg-static';
 import { logger } from '../utils/logger.js';
+
+// Deliberately not ffmpeg-static: its bundled binary is statically linked
+// against glibc, and static glibc binaries segfault resolving DNS for real
+// stream hosts (see Dockerfile). The apt-installed 'ffmpeg' on PATH doesn't
+// have that problem.
+const ffmpegPath = 'ffmpeg';
 
 /**
  * Represents one fixed internet radio stream, resolved from the
