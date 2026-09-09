@@ -1,3 +1,4 @@
+import { MessageFlags } from 'discord.js';
 import { nowPlayingEmbed, trackAnnouncementEmbed } from './embeds.js';
 import { buildControlRows, buildTrackLinkRow } from './controls.js';
 import { logger } from '../utils/logger.js';
@@ -31,9 +32,13 @@ export async function postTrackAnnouncement(session, title) {
     session.trackAnnouncementMessage = null;
   }
 
+  // Track changes happen every few minutes, all day — a push/sound ping for
+  // each one would be noise, not signal. SuppressNotifications still posts
+  // the message normally, it just skips the notification.
   const payload = {
     embeds: [trackAnnouncementEmbed(session, title)],
     components: [buildTrackLinkRow(title)],
+    flags: MessageFlags.SuppressNotifications,
   };
 
   try {
