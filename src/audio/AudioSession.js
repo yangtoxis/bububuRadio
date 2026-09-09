@@ -15,7 +15,8 @@ import { ListeningStatsRepo } from '../database/db.js';
 
 const RECONNECT_GRACE_MS = 5_000;
 const RADIO_RESTART_DELAY_MS = 3_000;
-const MAX_RADIO_RESTART_ATTEMPTS = 5;
+const RADIO_RESTART_MAX_DELAY_MS = 60_000;
+const MAX_RADIO_RESTART_ATTEMPTS = 8;
 const VOICE_READY_TIMEOUT_MS = 20_000;
 const LISTENING_TICK_MS = 60_000;
 
@@ -112,6 +113,18 @@ export class AudioSession extends EventEmitter {
   }
 
   _bindPlayerEvents() {
+    // Real audio frames actually flowing is the only trustworthy "recovered"
+    // signal — spawning ffmpeg (which happens unconditionally, network or
+    // no) is not, since a connection failure only surfaces later via the
+    // Idle handler below. Without this, every transient hiccup over the
+    // session's lifetime permanently ate one of the finite retry attempts
+    // (they only ever got reset by a fresh /play), so small blips quietly
+    // accrued over hours of otherwise-healthy playback until an unrelated
+    // later blip tripped the give-up ceiling on its own.
+    this.player.on(AudioPlayerStatus.Playing, () => {
+      this._radioRestartAttempts = 0;
+    });
+
     this.player.on(AudioPlayerStatus.Idle, () => {
       // Radio has no natural "end" — hitting Idle while a station is set
       // means the underlying ffmpeg process died (stream dropped hard).
@@ -146,12 +159,20 @@ export class AudioSession extends EventEmitter {
       return;
     }
 
+    // Exponential backoff (3s, 6s, 12s, ... capped at 60s) instead of a flat
+    // delay — a real multi-minute upstream blip gets room to clear instead
+    // of burning through the attempt budget in a tight 3s-spaced loop.
+    const delay = Math.min(
+      RADIO_RESTART_DELAY_MS * 2 ** (this._radioRestartAttempts - 1),
+      RADIO_RESTART_MAX_DELAY_MS
+    );
     this.log.warn('Radio stream unavailable, retrying', {
       station: source.stationId,
       attempt: this._radioRestartAttempts,
+      delayMs: delay,
     });
 
-    await new Promise((r) => setTimeout(r, RADIO_RESTART_DELAY_MS));
+    await new Promise((r) => setTimeout(r, delay));
     if (this._destroyed || this.station !== source) return;
 
     try {
